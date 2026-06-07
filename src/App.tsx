@@ -32,6 +32,17 @@ export default function App() {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [winnerSegment, setWinnerSegment] = useState<Segment | null>(null);
   const [activeTab, setActiveTab] = useState<'wheel' | 'setup' | 'rules'>('wheel');
+  const [shotType, setShotType] = useState<'tee' | 'approach' | 'green'>('tee');
+
+  // Dynamically filtered segments (exclude Putter for Tee and Approach shot selection)
+  const getActiveSegments = (): Segment[] => {
+    return segments.filter(seg => {
+      if (shotType === 'tee' || shotType === 'approach') {
+        return seg.id !== 'putter' && !seg.name.toLowerCase().includes('putter');
+      }
+      return true;
+    });
+  };
   
   // Custom segment editing modal/input state
   const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null);
@@ -62,10 +73,10 @@ export default function App() {
     setIsMuted(muted);
   };
 
-  // Re-draw wheel on initial load or segment edit
+  // Re-draw wheel on initial load or segment edit or shot selection toggles
   useEffect(() => {
     drawWheelStatic();
-  }, [segments, activeAura]);
+  }, [segments, activeAura, shotType]);
 
   const drawWheelStatic = () => {
     const canvas = canvasRef.current;
@@ -98,7 +109,8 @@ export default function App() {
     currentAngle: number,
     tickerDeflection: number
   ) => {
-    const totalWedges = segments.length;
+    const activeSegments = getActiveSegments();
+    const totalWedges = activeSegments.length;
     const segAngle = (2 * Math.PI) / totalWedges;
 
     // Clear background with soft black depth
@@ -116,7 +128,7 @@ export default function App() {
 
     // 2. Draw Wheel Slices
     for (let i = 0; i < totalWedges; i++) {
-      const seg = segments[i];
+      const seg = activeSegments[i];
       const startAngle = i * segAngle + currentAngle;
       const endAngle = (i + 1) * segAngle + currentAngle;
 
@@ -356,7 +368,8 @@ export default function App() {
     angularVelocityRef.current *= 0.985;
 
     // C. Check tactile ticker clicks!
-    const totalWedges = segments.length;
+    const activeSegments = getActiveSegments();
+    const totalWedges = activeSegments.length;
     const segAngle = (2 * Math.PI) / totalWedges;
     
     // Wedge index relative to the top ticker positioned at 1.5 * Math.PI
@@ -415,7 +428,8 @@ export default function App() {
    * Perfectly calculate the slice pointing directly under the indicator
    */
   const calcWinningSegment = (): Segment => {
-    const totalWedges = segments.length;
+    const activeSegments = getActiveSegments();
+    const totalWedges = activeSegments.length;
     const segAngle = (2 * Math.PI) / totalWedges;
     
     // Normalize target angle pointing straight up (1.5 * Math.PI) relative to current angle offset
@@ -426,7 +440,7 @@ export default function App() {
     const positiveAngle = (normalizedAngle + 2 * Math.PI) % (2 * Math.PI);
     
     const winningIndex = Math.floor(positiveAngle / segAngle);
-    return segments[winningIndex % totalWedges];
+    return activeSegments[winningIndex % totalWedges];
   };
 
   // Log rating update
@@ -945,6 +959,51 @@ export default function App() {
                 </button>
                 <span className="text-gray-600 font-bold">|</span>
                 <span className="font-mono text-[10px] text-[#eab308] uppercase font-semibold">{activeAura === 'gold' ? '😇 ANGELIC luck' : '😈 DEVIOUS luck'}</span>
+              </div>
+            </div>
+
+            {/* Dynamic Shot Selection Segmented Controller */}
+            <div className="mb-4" id="shot-selection-container">
+              <div className="flex bg-[#121212] p-1 rounded-xl border border-white/5 gap-1 shadow-inner" id="shot-selection-toggle">
+                <button
+                  type="button"
+                  disabled={isSpinning}
+                  onClick={() => setShotType('tee')}
+                  className={`flex-1 py-2.5 px-0.5 text-[11px] font-black rounded-lg transition-all duration-300 uppercase tracking-widest flex items-center justify-center gap-1 select-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    shotType === 'tee'
+                      ? 'bg-[#d4af37] text-black border border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.45)] scale-[1.01]'
+                      : 'bg-[#171717]/80 hover:bg-[#222222] text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
+                  id="shot-tee"
+                >
+                  🏌️‍♂️ Tee
+                </button>
+                <button
+                  type="button"
+                  disabled={isSpinning}
+                  onClick={() => setShotType('approach')}
+                  className={`flex-1 py-2.5 px-0.5 text-[11px] font-black rounded-lg transition-all duration-300 uppercase tracking-widest flex items-center justify-center gap-1 select-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    shotType === 'approach'
+                      ? 'bg-[#d4af37] text-black border border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.45)] scale-[1.01]'
+                      : 'bg-[#171717]/80 hover:bg-[#222222] text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
+                  id="shot-approach"
+                >
+                  🎯 Approach
+                </button>
+                <button
+                  type="button"
+                  disabled={isSpinning}
+                  onClick={() => setShotType('green')}
+                  className={`flex-1 py-2.5 px-0.5 text-[11px] font-black rounded-lg transition-all duration-300 uppercase tracking-widest flex items-center justify-center gap-1 select-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    shotType === 'green'
+                      ? 'bg-[#d4af37] text-black border border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.45)] scale-[1.01]'
+                      : 'bg-[#171717]/80 hover:bg-[#222222] text-slate-400 hover:text-slate-200 border border-transparent'
+                  }`}
+                  id="shot-green"
+                >
+                  ⛳ Green
+                </button>
               </div>
             </div>
 
