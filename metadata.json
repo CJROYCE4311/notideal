@@ -1,0 +1,6 @@
+{
+  "name": "Wheel of Not Ideal",
+  "description": "A golf league game wheel to select sub-optimal clubs for a fun and challenging round.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
